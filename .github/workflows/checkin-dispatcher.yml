@@ -31,7 +31,8 @@ jobs:
           print(f'dispatch={str(selected).lower()}')
           print(f'time={now:%H:%M:%S}')
           PY
-          echo "北京时间 $(date '+%F %T')，随机时段索引 ${{ steps.slot.outputs.slots }}，当前索引 ${{ steps.slot.outputs.current }}"
+      - name: 显示时段选择结果
+        run: echo "北京时间 ${{ steps.slot.outputs.today }} ${{ steps.slot.outputs.time }}，随机时段索引 ${{ steps.slot.outputs.slots }}，当前索引 ${{ steps.slot.outputs.current }}，派发=${{ steps.slot.outputs.dispatch }}"
       - name: 派发签到 workflow
         if: steps.slot.outputs.dispatch == 'true'
         env:
