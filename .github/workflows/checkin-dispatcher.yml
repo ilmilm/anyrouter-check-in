@@ -1,0 +1,42 @@
+name: AnyRouter 自动派发签到
+on:
+  schedule:
+    # UTC 05:00-12:30，每半小时检查一次，对应北京时间 13:00-20:30。
+    - cron: '0,30 5-12 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 选择今日的两个随机时段
+        id: slot
+        env:
+          TZ: Asia/Shanghai
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          import random
+          now = datetime.now(ZoneInfo('Asia/Shanghai'))
+          slots = sorted(random.Random(now.strftime('%Y-%m-%d')).sample(range(16), 2))
+          current = (now.hour - 13) * 2 + (1 if now.minute >= 30 else 0)
+          selected = 0 <= current < 16 and current in slots
+          print(f'today={now:%Y-%m-%d}')
+          print(f'current={current}')
+          print(f'slots={slots}')
+          print(f'dispatch={str(selected).lower()}')
+          print(f'time={now:%H:%M:%S}')
+          PY
+          echo "北京时间 $(date '+%F %T')，随机时段索引 ${{ steps.slot.outputs.slots }}，当前索引 ${{ steps.slot.outputs.current }}"
+      - name: 派发签到 workflow
+        if: steps.slot.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run checkin.yml --repo "$GITHUB_REPOSITORY" --ref main
+      - name: 本时段不签到
+        if: steps.slot.outputs.dispatch != 'true'
+        run: echo '当前不是今天选中的签到时段，跳过派发。'

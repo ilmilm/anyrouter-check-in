@@ -1,12 +1,5 @@
 name: AnyRouter 自动签到
 on:
-  schedule:
-    # 每天两次，落点随机分布在 13:00-21:00（北京时间）。
-    # 做法：cron 只在 13:00 与 17:00 触发，任务内再随机延迟 0~3.5 小时，
-    # 于是两次签到分别落在 13:00-16:30 与 17:00-20:30，且每天时间都不同。
-    # GitHub cron 用 UTC，北京时间 - 8 小时。
-    - cron: '0 5 * * *'
-    - cron: '0 9 * * *'
   workflow_dispatch:
     inputs:
       debug:
@@ -92,15 +85,6 @@ jobs:
         MIHOMO_VERSION: v1.19.27
         PROXY_REQUIRED: false
       run: bash scripts/setup_mihomo_proxy.sh
-
-    - name: 随机延迟（打散签到时间，仅定时触发时生效）
-      if: github.event_name == 'schedule'
-      run: |
-        MAX=$(( 3 * 3600 + 1800 ))
-        SEC=$(( (RANDOM << 15 | RANDOM) % MAX ))
-        echo "本次随机延迟 $((SEC / 60)) 分 $((SEC % 60)) 秒"
-        echo "预计签到时间: $(date -u -d "+$((SEC + 28800)) seconds" '+%F %H:%M:%S CST')"
-        sleep "$SEC"
 
     - name: 执行签到
       env:
